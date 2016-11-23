@@ -77,7 +77,7 @@ Write configuration for the Kea DHCP server from a Palletjack warehouse"
           dhcp4_option(67, 'boot-file-name', net['net.dhcp.boot-file'])
       end
 
-      net.children(kind:'ipv4_interface',
+      net.descendants(kind:'ipv4_interface',
                    none?:{ 'net.layer2.address' => nil }
                   ) do |interface|
         net_config['reservations'] << {
