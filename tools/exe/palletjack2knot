@@ -94,7 +94,7 @@ Write DNS server zone files from a Palletjack warehouse"
       end
     end
 
-    domain.children(kind:'ipv4_interface') do |interface|
+    domain.descendants(kind:'ipv4_interface') do |interface|
       a = DNS::Zone::RR::A.new
       a.label = interface['net.dns.name']
       a.address = interface['net.ipv4.address']
@@ -143,7 +143,7 @@ Write DNS server zone files from a Palletjack warehouse"
       reverse_zone.records << ns
     end
 
-    domain.children(kind:'ipv4_interface') do |interface|
+    domain.descendants(kind:'ipv4_interface') do |interface|
       ptr = DNS::Zone::RR::PTR.new
       ptr.label = IP.new(interface['net.ipv4.address']).to_arpa
       ptr.name = "#{interface['net.dns.fqdn']}."
