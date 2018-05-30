@@ -1,0 +1,42 @@
+  pallet._config:
+    - require_name: "^/_config/"
+      string: "%{_meta.basename}"
+  pallet.building:
+    - require_name: "^/building/"
+      string: "%{_meta.basename}"
+  pallet.chassis:
+    - require_name: "^/chassis/"
+      string: "%{_meta.basename}"
+  pallet.domain:
+    - require_name: "^/domain/"
+      string: "%{_meta.basename}"
+  pallet.ipv4_interface:
+    - require_name: "^/ipv4_interface/"
+      string: "%{_meta.basename}"
+  pallet.ipv4_network:
+    - require_name: "^/ipv4_network/"
+      string: "%{_meta.basename}"
+  pallet.machine:
+    - require_name: "^/machine/"
+      string: "%{_meta.basename}"
+  pallet.netinstall:
+    - require_name: "^/netinstall/"
+      string: "%{_meta.basename}"
+  pallet.os:
+    - require_name: "^/os/"
+      string: "%{_meta.basename}"
+  pallet.phy_nic:
+    - require_name: "^/phy_nic/"
+      string: "%{_meta.basename}"
+  pallet.rack:
+    - require_name: "^/rack/"
+      string: "%{_meta.basename}"
+  pallet.room:
+    - require_name: "^/room/"
+      string: "%{_meta.basename}"
+  pallet.service:
+    - require_name: "^/service/"
+      string: "%{_meta.basename}"
+  pallet.system:
+    - require_name: "^/system/"
+      string: "%{_meta.basename}"

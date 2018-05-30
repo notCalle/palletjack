@@ -137,7 +137,6 @@
 #    - inherit: ~
 #    - synthesize: "#[chassis.nic.name]"
 
-
 # Default transforms
 # ==================
 #
@@ -148,50 +147,46 @@
 #   read the object names from the links (in the "pallet." namespace)
 #   and populate a "*.name" key.
 
-- location.room.name:
-  - synthesize: "#[pallet.room]"
-- location.building.name:
-  - synthesize: "#[pallet.building]"
-- location.room.name:
-  - synthesize: "#[pallet.room]"
-- chassis.name:
-  - synthesize: "#[pallet.chassis]"
-- net.dns.domain:
-  - synthesize: "#[pallet.domain]"
-- location.room.name:
-  - synthesize: "#[pallet.room]"
-- location.rack.name:
-  - synthesize: "#[pallet.rack]"
-- system.name:
-  - synthesize: "#[pallet.system]"
-- net.dns.name:                    # Later rules can reference previously
-  - synthesize: "#[system.name]"   # synthesized values
+  location.room.name:
+    - string: "%{pallet.room}"
+  location.building.name:
+    - string: "%{pallet.building}"
+  chassis.name:
+    - string: "%{pallet.chassis}"
+  net.dns.domain:
+    - string: "%{pallet.domain}"
+  location.rack.name:
+    - string: "%{pallet.rack}"
+  system.name:
+    - string: "%{pallet.system}"
+  net.dns.name:                      # Rules can reference other
+    - string: "%{system.name}"       # default values
 
 
 # These keys have the same data as "*.name" above, but have actual
 # mening to their names in addition to identification, so use keys
 # named for the purpose of the data instead of "name".
 
-- system.os:
-  - synthesize: "#[pallet.os]"
-- net.ipv4.address:
-  - synthesize: "#[pallet.ipv4_interface]"
-- net.layer2.address:
-  - synthesize: "#[pallet.phy_nic]"
-- host.kickstart.config:
-  - synthesize: "#[pallet.os]-#[pallet.netinstall]"
+  system.os:
+    - string: "%{pallet.os}"
+  net.ipv4.address:
+    - string: "%{pallet.ipv4_interface}"
+  net.layer2.address:
+    - string: "%{pallet.phy_nic}"
+  host.kickstart.config:
+    - string: "%{pallet.os}-%{pallet.netinstall}"
 
 
 # Simple pasting of previous values to synthesize a new one. Note that
 # we are, again, accessing a previously synthesized value.
 
-- net.dns.fqdn:
-  - synthesize: "#[net.dns.name].#[net.dns.domain]"
+  net.dns.fqdn:
+    - string: "%{net.dns.name}.%{net.dns.domain}"
 
-- host.kickstart.ksurl:
-  - synthesize: "http://kickstart/#[host.kickstart.config].cfg"
-- host.pxelinux.kernel:
-  - synthesize: "/boot/#[system.os]/vmlinuz"
+  host.kickstart.ksurl:
+    - string: "http://kickstart/%{host.kickstart.config}.cfg"
+  host.pxelinux.kernel:
+    - string: "/boot/%{system.os}/vmlinuz"
 
 
 # A list of synthesizing rules is processed from top to bottom, and
@@ -199,14 +194,14 @@
 # "chassis.nic.pcislot" doesn't exist, the first rule fails and the
 # second one takes over.
 
-- chassis.nic.name:
-  - synthesize:
-      - "p#[chassis.nic.pcislot]p#[chassis.nic.port]"
-      - "em#[chassis.nic.port]"
-- host.pxelinux.config:
-  - synthesize:
-    - "#[pallet.os]-#[pallet.netinstall]"
-    - "#[pallet.os]"
+  chassis.nic.name:
+    - string:
+      - "p%{chassis.nic.pcislot}p%{chassis.nic.port}"
+      - "em%{chassis.nic.port}"
+  host.pxelinux.config:
+    - string:
+      - "%{pallet.os}-%{pallet.netinstall}"
+      - "%{pallet.os}"
 
 
 # This is probably a bad default, but it's at least something. If the
@@ -217,9 +212,10 @@
 # assigned value for a virtual phy_nic is inherited, and not
 # overridden by the physical chassis based name.
 
-- net.layer2.name:
-  - inherit: ~
-  - synthesize: "#[chassis.nic.name]"
+  net.layer2.name:
+    - string:
+      - "%{^.net.layer2.name}"
+      - "%{chassis.nic.name}"
 
 
 # Regexp synthesizing rules. ipv4_network objects are named like
@@ -233,38 +229,25 @@
 # forms. A little repetition here allows us to have much simpler tools
 # later in the chain.
 
-- net.ipv4.prefixlen:
-  - synthesize_regexp:
-      sources:
-        ipv4_network:
-          key: "pallet.ipv4_network"
-          regexp: "_(?<prefix_length>[0-9]+)$"
-      produce: "#[prefix_length]"
-- net.ipv4.cidr:
-  - synthesize_regexp:
-      sources:
-        ipv4_network:
-          key: "pallet.ipv4_network"
-          regexp: "^(?<network>[0-9.]+)_(?<prefix_length>[0-9]+)$"
-      produce: "#[network]/#[prefix_length]"
+  net.ipv4.prefixlen:
+    - regexp:
+        pallet.ipv4_network: "_(?<prefix_length>[0-9]+)$"
+      string: "%{prefix_length}"
+  net.ipv4.cidr:
+    - regexp:
+        pallet.ipv4_network: "^(?<network>[0-9.]+)_(?<prefix_length>[0-9]+)$"
+      string: "%{network}/%{prefix_length}"
 
-- host.pxelinux.append:
-  - synthesize_regexp:
-      sources:
-        os:
-          key: "system.os"
-          regexp: "^(?<os>.*)$"
-        ksurl:
-          key: "host.kickstart.ksurl"
-          regexp: "^(?<ksurl>http://.*)$"
-        baseurl:
-          key: "host.kickstart.baseurl"
-          regexp: "^(?<baseurl>http://.*)$"
-      produce:
-      - "initrd=/boot/#[os]/initrd.img
-         inst.ks=#[ksurl]"
-      - "initrd=/boot/#[os]/initrd.img
-         method=#[baseurl]"
+  host.pxelinux.append:
+    - regexp:
+        system.os: "^(?<os>.*)$"
+        host.kickstart.ksurl: "^(?<ksurl>http://.*)$"
+        host.kickstart.baseurl: "^(?<baseurl>http://.*)$"
+      string:
+        - "initrd=/boot/%{os}/initrd.img
+           inst.ks=#[ksurl]"
+        - "initrd=/boot/%{os}/initrd.img
+           method=%{baseurl}"
 
 
 # Chassis names contain multiple colon-separated fields. Pick these
@@ -273,21 +256,16 @@
 # We'll be using the same regexp several times, so we use YAML
 # aliasing to reference a single definition.
 
-- chassis.vendor:
-  - synthesize_regexp:
-      sources: &pallet_chassis
-        chassis:
-          key: "pallet.chassis"
-          regexp: "^(?<vendor>[^:]*):((?<line>[^:-]*)-)?((?<series>[^:-]*)-)?(?<model>[^:]*):(?<serial>[^:]*)$"
-      produce: "#[vendor]"
-- chassis.model:
-  - synthesize_regexp:
-      sources: *pallet_chassis
-      produce:
-        - "#[line] #[series] #[model]"
-        - "#[line] #[model]"
-        - "#[model]"
-- chassis.serial:
-  - synthesize_regexp:
-      sources: *pallet_chassis
-      produce: "#[serial]"
+  chassis.vendor:
+    - regexp: &pallet_chassis
+        pallet.chassis: "^(?<vendor>[^:]*):((?<line>[^:-]*)-)?((?<series>[^:-]*)-)?(?<model>[^:]*):(?<serial>[^:]*)$"
+      string: "%{vendor}"
+  chassis.model:
+    - regexp: *pallet_chassis
+      string:
+        - "%{line} %{series} %{model}"
+        - "%{line} %{model}"
+        - "%{model}"
+  chassis.serial:
+    - regexp: *pallet_chassis
+      string: "%{serial}"
